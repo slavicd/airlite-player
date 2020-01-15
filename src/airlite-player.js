@@ -57,6 +57,10 @@ class AirlitePlayer {
     }
 
     load() {
+        if (this.cfg.onLoadStart) {
+            this.cfg.onLoadStart();
+        }
+
         var that = this;
         return new Promise(function(resolve, reject){
             axios.get(that.cfg.dataUrl, {
