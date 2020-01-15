@@ -65,8 +65,8 @@ class AirlitePlayer {
         return new Promise(function(resolve, reject){
             axios.get(that.cfg.dataUrl, {
                 params: {
-                    period_from: that.range[0],
-                    period_to: that.range[1]
+                    from: that.range[0],
+                    to: that.range[1]
                 }
             }).then(function(resp){
                 that.data = resp.data;
