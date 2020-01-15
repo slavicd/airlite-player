@@ -54,7 +54,7 @@
 						<input type="date" id="to-date-ipt" name="to" value="" class="form-control" />
 					</div>
 					<div class="form-group">
-						<output name="result">
+						<output id="load-status">
 							Loading data..
 						</output>
 					</div>
@@ -66,6 +66,10 @@
 							<input id="progress-bar" type="range" value="1" class="custom-range form-control"
 								   autocomplete="off" readonly disabled min="0" max="100" />
 						</div>
+					</div>
+
+					<div class="form-group">
+						<output><code id="clock"></code></output>
 					</div>
 				</form>
 			</div>
@@ -79,16 +83,21 @@
 				anchor: "map",
 				dataUrl: "http://airlite.dev.entropi.me/",
 				mapCenter: [45.6572, 25.6145],
-				animationInterval: 200,
+				animationInterval: 250,
+				from: $("#from-date-ipt").val(),
+				to: $("#to-date-ipt").val(),
+
 				onLoadStart: function() {
-					$("#dash form").find("output").text("Loading data..");
+					$("#load-status").text("Loading data..");
 				},
 				onLoad: function(player, data) {
 					player.biteIn();
-					$("#dash form").find("output").text("Loaded " + data.length + " frames.");
+					$("#load-status").text("Loaded " + data.length + " frames.");
 				},
-				onAnimation: function(progress) {
-					document.getElementById("progress-bar").value = progress*100
+				onAnimation: function(progress, date) {
+					document.getElementById("progress-bar").value = progress*100;
+					console.log(date.toString());
+					$("#clock").text(date.toString());
 				}
 			});
 
@@ -104,7 +113,6 @@
 			$("#dash form").find("input[type='date']").on("change", function() {
 				var from = $("#from-date-ipt").val();
 				var to = $("#to-date-ipt").val();
-
 				player.setDateRange([from, to]);
 			});
 		});

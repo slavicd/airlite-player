@@ -4,11 +4,20 @@ class AirlitePlayer {
     constructor(cfg) {
         const defaults = {
             mapCenter: [45.1, 25.3],
-            animationInterval: 100
+            animationInterval: 100,
+
+            pointRadius: 0.01,
+            threshold: 80,
         };
         this.cfg = Object.assign(defaults, cfg);
         this.data = [];
         this.range = [];
+        if (cfg.from) {
+            this.range[0] = cfg.from;
+        }
+        if (cfg.to) {
+            this.range[1] = cfg.to;
+        }
 
         var baseLayer = L.tileLayer(
             'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -20,7 +29,7 @@ class AirlitePlayer {
         var cfg = {
             // radius should be small ONLY if scaleRadius is true (or small radius is intended)
             // if scaleRadius is false it will be the constant radius used in pixels
-            "radius": 0.01,
+            "radius": this.cfg.pointRadius,
             "maxOpacity": .8,
             // scales the radius based on map zoom
             "scaleRadius": true,
@@ -34,7 +43,7 @@ class AirlitePlayer {
             lngField: 'lng',
             // which field name in your data represents the data value - default "value"
             valueField: 'value',
-            blur: 0.8,
+            blur: 0.85,
             data: {
                 data: []
             }
@@ -61,16 +70,28 @@ class AirlitePlayer {
             this.cfg.onLoadStart();
         }
 
+        this.stop();
+
         var that = this;
         return new Promise(function(resolve, reject){
             axios.get(that.cfg.dataUrl, {
                 params: {
                     from: that.range[0],
-                    to: that.range[1]
+                    to: that.range[1],
+                    group: 900
                 }
             }).then(function(resp){
                 that.data = resp.data;
                 //console.log(resp.data);
+
+                // calibrate radiuses
+                for (let i=0; i<that.data.length; i++) {
+                    for (let j=0; j<that.data[i].values.length; j++) {
+                        if (that.data[i].values[j].value > that.cfg.threshold) {
+                            that.data[i].values[j].radius = that.data[i].values[j].value / that.cfg.threshold * that.cfg.pointRadius;
+                        }
+                    }
+                }
 
                 if (that.cfg.onLoad) {
                     that.cfg.onLoad(that, that.data);
@@ -85,12 +106,17 @@ class AirlitePlayer {
         if (this.data.length==0) {
             return ;
         }
-        this.setHmlData(this.data[0]);
+        //console.log(this.data[0]);
+        this.setHmlData(this.data[0].values);
     }
 
+    /**
+     * Set Heatmaplayer data
+     *
+     */
     setHmlData(data) {
         var hmlData = {
-            max: 100,
+            max: this.cfg.threshold,
             data: data
         };
 
@@ -98,19 +124,20 @@ class AirlitePlayer {
     }
 
     play() {
-        if (
-            this.data.length==0
-            || this.animationInterv
-        ) {
+        if (this.data.length==0) {
             console.log("not playing with you!");
             return ;
+        }
+        if (this.animationInterv) {
+            this.stop();
+            return;
         }
 
         var index = 0;
         var that = this;
 
         this.animationInterv = window.setInterval(function() {
-            that.setHmlData(that.data[index])
+            that.setHmlData(that.data[index].values)
             ++index;
             //console.log("frame:", index);
             if (index>=that.data.length) {
@@ -118,7 +145,7 @@ class AirlitePlayer {
             }
 
             if (that.cfg.onAnimation) {
-                that.cfg.onAnimation(index/that.data.length);
+                that.cfg.onAnimation(index/that.data.length, new Date(that.data[index].timestamp*1000));
             }
         }, this.cfg.animationInterval);
     }
