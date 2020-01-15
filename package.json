@@ -1,0 +1,26 @@
+{
+  "name": "airlite-player",
+  "version": "0.1.0",
+  "description": "A visualizer of pollution concentration data over time",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx webpack --entry src/airlite-player.js -o dist/bundle.js --mode production",
+    "build-dev": "npx webpack --entry ./index.js -o dist/bundle.js --mode development",
+    "watch": "npx webpack --entry ./index.js -o dist/bundle.js --mode development -w --devtool cheap-source-map"
+  },
+  "keywords": [
+    "heatmap",
+    "pollution",
+    "heatmap player"
+  ],
+  "author": "Slavic Dragovtev",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.1"
+  },
+  "devDependencies": {
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  }
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Airlite Player</title>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+	<!-- Make sure you put this AFTER Leaflet's CSS -->
+	<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+
+	<script
+		src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+		integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8="
+		crossorigin="anonymous"></script>
+	<script type="text/javascript" src="vendor/heatmap.min.js"></script>
+	<script type="text/javascript" src="vendor/leaflet-heatmap.js"></script>
+
+	<script src="dist/bundle.js"></script>
+
+	<style type="text/css">
+		/*body {*/
+		/*	padding: 0;*/
+		/*	margin: 0;*/
+		/*}*/
+		#map {
+			height: 100vh;
+			margin: 0 -15px;
+		}
+		#player-controls .custom-range {
+			height: 38px;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="container" class="container-fluid">
+		<div class="row">
+			<div class="col">
+				<div id="map"></div>
+			</div>
+
+
+			<div id="dash" class="col-sm-5 col-md-3">
+				<h1 class="text-center">Airlite Player</h1>
+
+				<form>
+					<div class="form-group">
+						<label>From date</label>
+						<input type="date" id="from-date-ipt" name="from" value="2019-12-01" class="form-control" />
+					</div>
+					<div class="form-group">
+						<label>To date</label>
+						<input type="date" id="to-date-ipt" name="to" value="" class="form-control" />
+					</div>
+					<div class="form-group">
+						<output name="result">
+							Loading data..
+						</output>
+					</div>
+					<div class="form-group">
+						<div id="player-controls" class="input-group">
+							<div class="input-group-prepend">
+								<button type="button" id="play-btn" class="btn btn-primary" disabled>Play</button>
+							</div>
+							<input id="progress-bar" type="range" value="1" class="custom-range form-control"
+								   autocomplete="off" readonly disabled min="0" max="100" />
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+
+	<script >
+		window.addEventListener("load", function() {
+			var player = new AirlitePlayer({
+				anchor: "map",
+				dataUrl: "http://0.0.0.0:8000/data.json",
+				mapCenter: [45.6572, 25.6145],
+				animationInterval: 200,
+				onLoadStart: function() {
+
+				},
+				onLoad: function(player, data) {
+					player.biteIn();
+					$("#dash form").find("output").text("Loaded " + data.length + " frames.");
+				},
+				onAnimation: function(progress) {
+					document.getElementById("progress-bar").value = progress*100
+				}
+			});
+
+			player.load().then(function(){
+				document.getElementById("play-btn").disabled = false;
+
+			});
+
+			document.getElementById("play-btn").addEventListener("click", function(){
+				player.play();
+			});
+
+			$("#dash form").find("input[type='date']").on("change", function() {
+				var from = $("#from-date-ipt").val();
+				var to = $("#to-date-ipt").val();
+
+				player.setDateRange([from, to]);
+			});
+		});
+	</script>
+</body>
+
+</html>
