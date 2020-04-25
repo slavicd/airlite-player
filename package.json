@@ -16,11 +16,9 @@
   ],
   "author": "Slavic Dragovtev",
   "license": "ISC",
-  "dependencies": {
-    "axios": "^0.19.1"
-  },
   "devDependencies": {
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "axios": "^0.19.2",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11"
   }
 }
