@@ -16,7 +16,7 @@
 	<script type="text/javascript" src="vendor/heatmap.min.js"></script>
 	<script type="text/javascript" src="vendor/leaflet-heatmap.js"></script>
 
-	<script src="dist/bundle.js"></script>
+	<script src="dist/bundle.js?v=2"></script>
 
 	<style type="text/css">
 		/*body {*/
@@ -34,89 +34,148 @@
 </head>
 <body>
 
-	<div id="container" class="container-fluid">
-		<div class="row">
-			<div class="col">
-				<div id="map"></div>
+<div id="container" class="container-fluid">
+	<div class="row">
+		<div class="col">
+			<div id="map"></div>
+		</div>
+
+
+		<div id="dash" class="col-sm-5 col-md-3">
+			<h1 class="text-center">Airlite Player</h1>
+
+			<p class="alert alert-info">
+				Particulate matter visualizer. Work in Progress. <br />
+			</p>
+
+			<div>
+				<small>Sources: PM 2.5 measurements from a subset of Uradmonitor sensors,
+					one AirVisual station in Brasov.
+				</small>
+				<table>
+					<tr>
+						<th>0-20 µg/m<sup>3</sup></th>
+						<td style="background-color: deepskyblue;">&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr>
+						<th>20-30 µg/m<sup>3</sup></th>
+						<td style="background-color: yellow;">&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr>
+						<th>30-50 µg/m<sup>3</sup></th>
+						<td style="background-color: red;">&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr>
+						<th>50+ µg/m<sup>3</sup></th>
+						<td style="background-color: purple;">&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+				</table>
 			</div>
 
-
-			<div id="dash" class="col-sm-5 col-md-3">
-				<h1 class="text-center">Airlite Player</h1>
-
-				<form>
-					<div class="form-group">
-						<label>From date</label>
-						<input type="date" id="from-date-ipt" name="from" value="2019-12-01" class="form-control" />
-					</div>
-					<div class="form-group">
-						<label>To date</label>
-						<input type="date" id="to-date-ipt" name="to" value="" class="form-control" />
-					</div>
-					<div class="form-group">
+			<form style="margin-top:2em;">
+				<div class="form-group">
+					<label>From date</label>
+					<input type="date" id="from-date-ipt" name="from" min="2019-12-01" value="" class="form-control" />
+				</div>
+				<div class="form-group">
+					<label>To date</label>
+					<input type="date" id="to-date-ipt" name="to" value="" class="form-control" />
+				</div>
+				<div class="form-group">
+					<code>
 						<output id="load-status">
 							Loading data..
 						</output>
-					</div>
-					<div class="form-group">
-						<div id="player-controls" class="input-group">
-							<div class="input-group-prepend">
-								<button type="button" id="play-btn" class="btn btn-primary" disabled>Play</button>
-							</div>
-							<input id="progress-bar" type="range" value="1" class="custom-range form-control"
-								   autocomplete="off" readonly disabled min="0" max="100" />
-						</div>
-					</div>
+					</code>
+				</div>
 
-					<div class="form-group">
-						<output><code id="clock"></code></output>
+				<div class="form-group">
+					<label>Temporal grouping (s)</label>
+					<input id="temporal_grouping" step="300" type="range" min="600" max="3600" value="900"
+						   autocomplete="off"
+						   oninput="tg_output.value = temporal_grouping.value" />
+					<output id="tg_output">900</output>
+				</div>
+
+				<div class="form-group">
+					<label>Animation delay (ms)</label>
+					<input id="animation_delay" step="50" type="range" min="50" max="2000" value="250"
+						   autocomplete="off"
+						   oninput="anim_delay_output.value = animation_delay.value" />
+					<output id="anim_delay_output">250</output>
+				</div>
+
+				<div class="form-group">
+					<div id="player-controls" class="input-group">
+						<div class="input-group-prepend">
+							<button type="button" id="play-btn" class="btn btn-primary" disabled>Play</button>
+						</div>
+						<input id="progress-bar" type="range" value="1" class="custom-range form-control"
+							   autocomplete="off" readonly disabled min="0" max="100" />
 					</div>
-				</form>
-			</div>
+				</div>
+
+				<div class="form-group">
+					<output><code id="clock"></code></output>
+				</div>
+			</form>
 		</div>
 	</div>
+</div>
 
 
-	<script >
-		window.addEventListener("load", function() {
-			var player = new AirlitePlayer({
-				anchor: "map",
-				dataUrl: "http://airlite.dev.entropi.me/",
-				mapCenter: [45.6572, 25.6145],
-				animationInterval: 250,
-				from: $("#from-date-ipt").val(),
-				to: $("#to-date-ipt").val(),
+<script >
+	window.addEventListener("load", function() {
+		var player = new AirlitePlayer({
+			anchor: "map",
+			dataUrl: "http://airlite-api.dev.entropi.me/",
+			mapCenter: [45.6572, 25.6145],
+			animationInterval: $("#animation_delay").val(),
+			from: $("#from-date-ipt").val(),
+			to: $("#to-date-ipt").val(),
+			temporalGrouping: $("#temporal_grouping").val(),
 
-				onLoadStart: function() {
-					$("#load-status").text("Loading data..");
-				},
-				onLoad: function(player, data) {
-					player.biteIn();
-					$("#load-status").text("Loaded " + data.length + " frames.");
-				},
-				onAnimation: function(progress, date) {
-					document.getElementById("progress-bar").value = progress*100;
-					console.log(date.toString());
-					$("#clock").text(date.toString());
-				}
-			});
-
-			player.load().then(function(){
-				document.getElementById("play-btn").disabled = false;
-
-			});
-
-			document.getElementById("play-btn").addEventListener("click", function(){
-				player.play();
-			});
-
-			$("#dash form").find("input[type='date']").on("change", function() {
-				var from = $("#from-date-ipt").val();
-				var to = $("#to-date-ipt").val();
-				player.setDateRange([from, to]);
-			});
+			onLoadStart: function() {
+				$("#load-status").text("Loading data..");
+				$("#play-btn").prop("disabled", true);
+			},
+			onLoad: function(player, data) {
+				player.biteIn();
+				$("#play-btn").prop("disabled", false);
+				$("#load-status").text("Loaded " + data.length + " frames.");
+			},
+			onAnimation: function(progress, date) {
+				document.getElementById("progress-bar").value = progress*100;
+				$("#clock").text(date.toString());
+			}
 		});
-	</script>
+
+
+		const today = new Date();
+		$("#from-date-ipt").val(today.getFullYear() + "-" + (today.getMonth()+1).toString().padStart(2, "0") + "-" + today.getDate().toString().padStart(2, "0"));
+
+		document.getElementById("play-btn").addEventListener("click", function(){
+			player.play();
+		});
+
+		$("#dash form").find("input[type='date']").on("change", function() {
+			var from = $("#from-date-ipt").val();
+			var to = $("#to-date-ipt").val();
+			player.setDateRange([from, to]);
+		});
+		$("#from-date-ipt").trigger("change");
+
+		$("#dash form").find("#temporal_grouping").on("change", function() {
+			player.stop();
+			player.setConfig('temporalGrouping', this.value);
+			player.load();
+		});
+		$("#dash form").find("#animation_delay").on("change", function() {
+			player.stop();
+			player.setConfig('animationInterval', this.value);
+		});
+	});
+</script>
 </body>
 
 </html>
