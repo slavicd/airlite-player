@@ -46,7 +46,7 @@ class AirlitePlayer {
             blur: 0.85,
             gradient: {
                 '0.0': 'blue',
-                '0.3': 'yellow',
+                '0.25': 'yellow',
                 '0.5': 'red',
                 '1.0': 'purple'
             },
