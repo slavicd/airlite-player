@@ -16,19 +16,21 @@
 	<script type="text/javascript" src="vendor/heatmap.min.js"></script>
 	<script type="text/javascript" src="vendor/leaflet-heatmap.js"></script>
 
-	<script src="dist/bundle.js?v=3"></script>
+	<script src="dist/bundle.js?v=4"></script>
 
 	<style type="text/css">
-		/*body {*/
-		/*	padding: 0;*/
-		/*	margin: 0;*/
-		/*}*/
+		body {
+			font-size: 14px;
+		}
 		#map {
 			height: 100vh;
 			margin: 0 -15px;
 		}
 		#player-controls .custom-range {
 			height: 38px;
+		}
+		h1 small {
+			font-size: 1rem;
 		}
 	</style>
 </head>
@@ -42,30 +44,25 @@
 
 
 		<div id="dash" class="col-sm-5 col-md-3">
-			<h1 class="text-center">Airlite Player</h1>
+			<h1 class="text-center">Airlite Player
+				<a href="https://github.com/slavicd/airlite-player"><small>alpha</small></a>
+			</h1>
 
-			<p class="alert alert-info">
-				Particulate matter visualizer. Work in Progress. <br />
+			<p class="">
+				Particulate matter visualizer</a>.
 			</p>
 
 			<div>
-				<small>Sources: PM 2.5 measurements from a subset of Uradmonitor sensors,
-					one AirVisual station in Brasov.
-				</small>
-				<table>
+				<table class="table table-sm">
 					<tr>
 						<th>0-20 µg/m<sup>3</sup></th>
 						<td style="background-color: deepskyblue;">&nbsp;&nbsp;&nbsp;</td>
-					</tr>
-					<tr>
-						<th>20-30 µg/m<sup>3</sup></th>
-						<td style="background-color: yellow;">&nbsp;&nbsp;&nbsp;</td>
-					</tr>
-					<tr>
 						<th>30-50 µg/m<sup>3</sup></th>
 						<td style="background-color: red;">&nbsp;&nbsp;&nbsp;</td>
 					</tr>
 					<tr>
+						<th>20-30 µg/m<sup>3</sup></th>
+						<td style="background-color: yellow;">&nbsp;&nbsp;&nbsp;</td>
 						<th>50+ µg/m<sup>3</sup></th>
 						<td style="background-color: purple;">&nbsp;&nbsp;&nbsp;</td>
 					</tr>
@@ -81,13 +78,16 @@
 					<label>To date</label>
 					<input type="date" id="to-date-ipt" name="to" value="" class="form-control" />
 				</div>
-				<div class="form-group">
-					<code>
+
+				<p class="alert alert-warning">
+					<small>
 						<output id="load-status">
 							Loading data..
 						</output>
-					</code>
-				</div>
+					</small>
+
+					<strong><output id="air-average"></output></strong>
+				</p>
 
 				<div class="form-group">
 					<label>Temporal grouping (s)</label>
@@ -119,6 +119,11 @@
 					<output><code id="clock"></code></output>
 				</div>
 			</form>
+
+			<p class="alert alert-info">
+				Sources used in this alpha: PM 2.5 measurements from a subset of Uradmonitor sensors,
+				one AirVisual station in Brasov (Coresi Avantgarden).
+			</p>
 		</div>
 	</div>
 </div>
@@ -140,13 +145,19 @@
 				$("#play-btn").prop("disabled", true);
 			},
 			onLoad: function(player, data) {
-				player.biteIn();
+				var frame = player.biteIn();
 				$("#play-btn").prop("disabled", false);
-				$("#load-status").text("Loaded " + data.length + " frames.");
+				var text = "Loaded " + data.length + " frames. ";
+				if (frame) {
+					date = new Date(frame.timestamp*1000)
+					text += "Last: " + date.toString();
+				}
+				$("#load-status").text(text);
 			},
-			onAnimation: function(progress, date) {
+			onAnimation: function(progress, frame) {
 				document.getElementById("progress-bar").value = progress*100;
-				$("#clock").text(date.toString());
+				$("#clock").text(new Date(frame.timestamp*1000).toString());
+				$("#air-average").html("Average: " + Math.round(frame.average) + " µg/m<sup>3</sup>");
 			}
 		});
 

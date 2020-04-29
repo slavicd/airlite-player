@@ -28,21 +28,26 @@ class Rasterizer {
         };
         this.config = Object.assign({}, defaults, config);
 
+        this.latStart = Math.min(bounds[0].lat, bounds[1].lat);
+        this.latEnd = Math.max(bounds[0].lat, bounds[1].lat);
+        this.lngStart = Math.min(bounds[0].lng, bounds[1].lng);
+        this.lngEnd = Math.max(bounds[0].lng, bounds[1].lng);
+        //console.debug("Bounds: ", this.latStart, this.lngStart, this.latEnd, this.lngEnd);
+
+        // decrease resolution when it doesn't make sense to have it big (small areas)
+        let dist = this._haversineDist({lat: this.latStart, lng: this.lngStart}, {lat: this.latEnd, lng: this.lngEnd})
+        if (dist<6000) {
+            this.config.resolution = Math.max(40, Math.round(dist/100));
+        }
+
         var latRes = this.config.resolution;
         var lngRes = this.config.resolution;
-
         if (typeof this.config["viewport"] != "undefined") {
             // work out the effective resolution based on viewport dimensions, such that the pixels are approximately square
             let vpRatio = this.config.viewport.x / this.config.viewport.y;
             lngRes = Math.round(lngRes*vpRatio);
             //console.debug("resolution:", latRes, lngRes);
         }
-
-        this.latStart = Math.min(bounds[0].lat, bounds[1].lat);
-        this.latEnd = Math.max(bounds[0].lat, bounds[1].lat);
-        this.lngStart = Math.min(bounds[0].lng, bounds[1].lng);
-        this.lngEnd = Math.max(bounds[0].lng, bounds[1].lng);
-        //console.debug("Bounds: ", this.latStart, this.lngStart, this.latEnd, this.lngEnd);
 
         this.latPxWidth = Math.abs((bounds[0].lat - bounds[1].lat)/latRes);
         this.lngPxWidth = Math.abs((bounds[0].lng - bounds[1].lng)/lngRes);

@@ -19,11 +19,12 @@ class AirlitePlayer {
             this.range[1] = cfg.to;
         }
 
+        let tileServer = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        //let tileServer = 'https://maps.wikimedia.org/osm-intl/${z}/${x}/${y}.png';
+
         var baseLayer = L.tileLayer(
-            'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            tileServer,{
                 attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors | Slavic Dragovtev',
-                maxZoom: 17,
-                minZoom: 7
             }
         );
 
@@ -31,7 +32,7 @@ class AirlitePlayer {
             // radius should be small ONLY if scaleRadius is true (or small radius is intended)
             // if scaleRadius is false it will be the constant radius used in pixels
             "radius": 0.001,
-            "minOpacity": .2,
+            "minOpacity": .4,
             // scales the radius based on map zoom
             "scaleRadius": true,
             // if set to false the heatmap uses the global maximum for colorization
@@ -45,10 +46,10 @@ class AirlitePlayer {
             valueField: 'value',
             blur: 0.85,
             gradient: {
-                '0.0': 'blue',
+                '0.0': '#1a8cff',
                 '0.25': 'yellow',
                 '0.5': 'red',
-                '1.0': 'purple'
+                '0.9': 'purple'
             },
             data: {
                 data: []
@@ -57,13 +58,18 @@ class AirlitePlayer {
         this.heatmapLayer = new HeatmapOverlay(cfg);
 
         this.map = L.map(this.cfg.anchor, {
-            layers: [baseLayer, this.heatmapLayer]
+            layers: [baseLayer, this.heatmapLayer],
+            maxZoom: 17,
+            minZoom: 7
         }).setView(this.cfg.mapCenter, 14);
+
+        L.control.scale({imperial: false}).addTo(this.map);
 
         let that = this;
         this.map.on("moveend zoomend", function() {
-           that.stop();
-           that.load()
+            console.log(that.map.getZoom());
+            that.stop();
+            that.load();
         });
 
         this.markers = [];
@@ -74,6 +80,14 @@ class AirlitePlayer {
     }
 
     getInferenceFromZoom() {
+        if (this.map.getZoom()>=17) {
+            return 200;
+        }
+
+        if (this.map.getZoom()>15) {
+            return 500;
+        }
+
         if (this.map.getZoom()>12) {
             return 1000;
         }
@@ -93,6 +107,15 @@ class AirlitePlayer {
         this.range = range;
 
         this.load();
+    }
+
+    computeAverage(stations) {
+        if (stations.length==0) {
+            return false;
+        }
+        let sum = stations.reduce(function(total, current) { return total+current.value;}, 0);
+
+        return sum/stations.length;
     }
 
     load() {
@@ -121,6 +144,9 @@ class AirlitePlayer {
                 for (let i=0; i<resp.data.length; i++) {
                     let frame = resp.data[i].values;
                     let bounds = that.map.getBounds();
+
+                    that.showStations(frame);
+
                     let raster = new Rasterizer(
                         frame,
                         [
@@ -137,6 +163,7 @@ class AirlitePlayer {
                     rasterized.push({
                         values: rFrame,
                         timestamp: resp.data[i].timestamp,
+                        average: that.computeAverage(frame)
                     });
                     //console.debug(rFrame);
                     //break;
@@ -158,7 +185,29 @@ class AirlitePlayer {
             return ;
         }
         //console.log(this.data[0]);
-        this.setHmlData(this.data[0].values);
+        this.setHmlData(this.data[this.data.length-1].values);
+
+        if (this.cfg.onAnimation) {
+            this.cfg.onAnimation(1, this.data[this.data.length-1]);
+        }
+
+        return this.data[this.data.length-1];
+    }
+
+    showStations(data) {
+        if (this.markers.length) {
+            this.markers.map(function(v){
+                v.remove();
+            });
+        }
+
+        if (this.map.getZoom()>12) {
+            for (let i=0; i<data.length; i++) {
+                let marker = L.marker([data[i].lat, data[i].lng]);
+                this.markers.push(marker);
+                marker.addTo(this.map);
+            }
+        }
     }
 
     /**
@@ -171,28 +220,12 @@ class AirlitePlayer {
             data: data
         };
 
-        if (this.markers.length) {
-            this.markers.map(function(v){
-                v.remove();
-            });
-        }
-
-        if (this.map.getZoom()>12) {
-            for (let i=0; i<data.length; i++) {
-                if (data[i].sources) {
-                    let marker = L.marker([data[i].lat, data[i].lng]);
-                    this.markers.push(marker);
-                    marker.addTo(this.map);
-                }
-            }
-        }
-
         this.heatmapLayer.setData(hmlData);
     }
 
     play() {
         if (this.data.length==0) {
-            console.log("not playing with you!");
+            //console.log("not playing with you!");
             return ;
         }
         if (this.animationInterv) {
@@ -204,15 +237,15 @@ class AirlitePlayer {
         var that = this;
 
         this.animationInterv = window.setInterval(function() {
-            that.setHmlData(that.data[index].values)
-            ++index;
-            //console.log("frame:", index);
-            if (index>=that.data.length-1) {
-                that.stop();
-            }
+            that.setHmlData(that.data[index].values);
 
             if (that.cfg.onAnimation) {
-                that.cfg.onAnimation(index/that.data.length, new Date(that.data[index].timestamp*1000));
+                that.cfg.onAnimation((index+1)/that.data.length, that.data[index]);
+            }
+
+            ++index;
+            if (index>=that.data.length) {
+                that.stop();
             }
         }, this.cfg.animationInterval);
     }
