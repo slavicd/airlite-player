@@ -23,7 +23,7 @@ class Rasterizer {
         this.input = input;
         this.bounds = bounds;
         const defaults = {
-            resolution: 80, // the result raster will contain this many vertical points
+            resolution: 100, // the result raster will contain this many vertical points
             inferenceRadius: 1000,  // meters
         };
         this.config = Object.assign({}, defaults, config);
@@ -37,7 +37,7 @@ class Rasterizer {
         // decrease resolution when it doesn't make sense to have it big (small areas)
         let dist = this._haversineDist({lat: this.latStart, lng: this.lngStart}, {lat: this.latEnd, lng: this.lngEnd})
         if (dist<6000) {
-            this.config.resolution = Math.max(40, Math.round(dist/100));
+            this.config.resolution = Math.max(30, Math.round(dist/100));
         }
 
         var latRes = this.config.resolution;
@@ -49,7 +49,7 @@ class Rasterizer {
             //console.debug("resolution:", latRes, lngRes);
         }
 
-        this.latPxWidth = Math.abs((bounds[0].lat - bounds[1].lat)/latRes);
+        this.latPxWidth = (this.latEnd - this.latStart)/latRes;
         this.lngPxWidth = Math.abs((bounds[0].lng - bounds[1].lng)/lngRes);
 
         this.inferenceRadiusLat = this.config.inferenceRadius / METERS_PER_LAT_DEGREE;
@@ -115,7 +115,6 @@ class Rasterizer {
                 lngKey++
             ) {
                 let lng = this.lngStart + this.lngPxWidth * lngKey;
-                let cell = this.grid[latKey][lngKey];
                 if (
                     (lngKey==forLngKey && latKey==forLatKey)
                     || typeof this.grid[latKey][lngKey] == "undefined"
@@ -123,6 +122,7 @@ class Rasterizer {
                 ) {
                     continue;
                 }
+                let cell = this.grid[latKey][lngKey];
                 let dist = this._haversineDist(
                     {lat: forLat+this.latPxWidth/2, lng: forLng+this.lngPxWidth/2},
                     {lat: lat+this.latPxWidth/2, lng: lng+this.lngPxWidth/2}
@@ -196,11 +196,9 @@ class Rasterizer {
                     }
 
                     if (typeof interGrid[latKey][lngKey] == "undefined") {
-                        interGrid[latKey][lngKey] = {};
-                    }
-
-                    if (typeof interGrid[latKey][lngKey].average != "undefined") {
-                        continue; // this pixel has actual sources or has already been computed
+                        interGrid[latKey][lngKey] = {
+                            proximity: 0
+                        };
                     }
 
                     let dist = this._haversineDist(
@@ -210,11 +208,20 @@ class Rasterizer {
                     if (dist>this.config.inferenceRadius) {
                         continue;
                     }
+                    let proximity = 1 - (dist / this.config.inferenceRadius);
+                    interGrid[latKey][lngKey].proximity = Math.max(proximity, interGrid[latKey][lngKey].proximity);
+
+                    if (typeof interGrid[latKey][lngKey].average != "undefined") {
+                        continue; // this pixel has actual sources or has already been computed
+                    }
 
                     // finally, now get an average form nearby "towers"
                     let aver = this._getWghtAverave(latKey, lngKey, infRadLng);
+
                     if (typeof aver != "undefined") {
                         //console.debug("getting aver for ", latKey, lngKey, aver);
+                        interGrid[latKey][lngKey].average = aver;
+                        // register ratio: distance to nearest source / inferenceRadius
                         interGrid[latKey][lngKey].average = aver;
                     } else {
                         //console.debug("undefined WA for: ", latKey, lngKey);
@@ -250,6 +257,7 @@ class Rasterizer {
             if (typeof grid[latKey][lngKey] == "undefined") {
                 grid[latKey][lngKey] = {
                     sources: [],
+                    proximity: 1,
                     average: null,
                     sum: 0,
                 };
@@ -282,10 +290,12 @@ class Rasterizer {
                 }
                 let o = {
                     value: grid[i][j].average,
+                    proximity: grid[i][j].proximity,
                     lat: i*this.latPxWidth+this.latStart + this.latPxWidth/2,
                     lng: j*this.lngPxWidth+this.lngStart + this.lngPxWidth/2,
                 };
-                o.radius = this.latPxWidth/2;
+                o.deltaLat = this.latPxWidth/2;
+                o.deltaLng = this.lngPxWidth/2;   // because one degree of latitude sometimes is more than the same degree in longitude
 
                 if (grid[i][j].sources) {
                     o.sources = grid[i][j].sources;

@@ -1,5 +1,6 @@
 import axios from "axios";
 import Rasterizer from "./rasterizer";
+import AirliteOverlay from "./airlite-leaflet-overlay";
 
 class AirlitePlayer {
     constructor(cfg) {
@@ -10,7 +11,10 @@ class AirlitePlayer {
             temporalGrouping: 900,
         };
         this.cfg = Object.assign(defaults, cfg);
+
         this.data = [];
+        this.rasterized = [];
+
         this.range = [];
         if (cfg.from) {
             this.range[0] = cfg.from;
@@ -24,41 +28,15 @@ class AirlitePlayer {
 
         var baseLayer = L.tileLayer(
             tileServer,{
-                attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors | Slavic Dragovtev',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
             }
         );
 
-        var cfg = {
-            // radius should be small ONLY if scaleRadius is true (or small radius is intended)
-            // if scaleRadius is false it will be the constant radius used in pixels
-            "radius": 0.001,
-            "minOpacity": .4,
-            // scales the radius based on map zoom
-            "scaleRadius": true,
-            // if set to false the heatmap uses the global maximum for colorization
-            // if activated: uses the data maximum within the current map boundaries
-            //   (there will always be a red spot with useLocalExtremas true)
-            useLocalExtrema: false,
-            // which field name in your data represents the latitude - default "lat"
-            latField: 'lat',
-            lngField: 'lng',
-            // which field name in your data represents the data value - default "value"
-            valueField: 'value',
-            blur: 0.85,
-            gradient: {
-                '0.0': '#1a8cff',
-                '0.25': 'yellow',
-                '0.5': 'red',
-                '0.9': 'purple'
-            },
-            data: {
-                data: []
-            }
-        };
-        this.heatmapLayer = new HeatmapOverlay(cfg);
+        var cfg = {};
+        this.airliteLayer = new AirliteOverlay(cfg);
 
         this.map = L.map(this.cfg.anchor, {
-            layers: [baseLayer, this.heatmapLayer],
+            layers: [baseLayer, this.airliteLayer],
             maxZoom: 17,
             minZoom: 7
         }).setView(this.cfg.mapCenter, 14);
@@ -66,8 +44,8 @@ class AirlitePlayer {
         L.control.scale({imperial: false}).addTo(this.map);
 
         let that = this;
-        this.map.on("moveend zoomend", function() {
-            console.log(that.map.getZoom());
+        this.map.on("moveend", function() {
+            //console.log(that.map.getZoom());
             that.stop();
             that.load();
         });
@@ -109,6 +87,11 @@ class AirlitePlayer {
         this.load();
     }
 
+    /**
+     * Computes average for given stations
+     * @param {array} stations
+     * @returns {boolean|number}
+     */
     computeAverage(stations) {
         if (stations.length==0) {
             return false;
@@ -140,12 +123,12 @@ class AirlitePlayer {
                     resp.data.splice(600);
                 }
 
-                var rasterized=[];
+                that.data = resp.data;
+
+                let rasterized=[];
                 for (let i=0; i<resp.data.length; i++) {
                     let frame = resp.data[i].values;
                     let bounds = that.map.getBounds();
-
-                    that.showStations(frame);
 
                     let raster = new Rasterizer(
                         frame,
@@ -154,7 +137,7 @@ class AirlitePlayer {
                             {lng: bounds.getNorthEast().lng, lat: bounds.getNorthEast().lat},
                         ],
                         {
-                            viewport: that.map.getPixelBounds().getSize(),
+                            viewport: that.map.getSize(),
                             inferenceRadius: that.getInferenceFromZoom()
                         }
                     );
@@ -169,10 +152,10 @@ class AirlitePlayer {
                     //break;
                 }
 
-                that.data = rasterized;
+                that.rasterized = rasterized;
 
                 if (that.cfg.onLoad) {
-                    that.cfg.onLoad(that, that.data);
+                    that.cfg.onLoad(that, that.data, that.rasterized);
                 }
 
                 resolve();
@@ -185,25 +168,35 @@ class AirlitePlayer {
             return ;
         }
         //console.log(this.data[0]);
-        this.setHmlData(this.data[this.data.length-1].values);
+        this.setHmlData(this.rasterized[this.rasterized.length-1].values);
+        this.showStations(this.data[this.rasterized.length-1].values);
 
         if (this.cfg.onAnimation) {
-            this.cfg.onAnimation(1, this.data[this.data.length-1]);
+            this.cfg.onAnimation(1, this.rasterized[this.rasterized.length-1]);
         }
 
-        return this.data[this.data.length-1];
+        return this.rasterized[this.rasterized.length-1];
     }
 
+    /**
+     * Display station markers on the map
+     * @param {array} data
+     */
     showStations(data) {
+        //console.log("showing stations: ", data);
         if (this.markers.length) {
             this.markers.map(function(v){
+                //console.log("removing", v);
                 v.remove();
             });
+            this.markers = [];
         }
 
         if (this.map.getZoom()>12) {
             for (let i=0; i<data.length; i++) {
-                let marker = L.marker([data[i].lat, data[i].lng]);
+                let marker = L.marker([data[i].lat, data[i].lng], {
+                    title: data[i].label
+                });
                 this.markers.push(marker);
                 marker.addTo(this.map);
             }
@@ -215,12 +208,8 @@ class AirlitePlayer {
      *
      */
     setHmlData(data) {
-        var hmlData = {
-            max: this.cfg.threshold,
-            data: data
-        };
-
-        this.heatmapLayer.setData(hmlData);
+        //console.log(data); return ;
+        this.airliteLayer.setData(data);
     }
 
     play() {
@@ -237,10 +226,11 @@ class AirlitePlayer {
         var that = this;
 
         this.animationInterv = window.setInterval(function() {
-            that.setHmlData(that.data[index].values);
+            that.setHmlData(that.rasterized[index].values);
+            that.showStations(that.data[index].values);
 
             if (that.cfg.onAnimation) {
-                that.cfg.onAnimation((index+1)/that.data.length, that.data[index]);
+                that.cfg.onAnimation((index+1)/that.rasterized.length, that.rasterized[index]);
             }
 
             ++index;

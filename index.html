@@ -13,8 +13,8 @@
 		src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
 		integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8="
 		crossorigin="anonymous"></script>
-	<script type="text/javascript" src="vendor/heatmap.min.js"></script>
-	<script type="text/javascript" src="vendor/leaflet-heatmap.js"></script>
+<!--	<script type="text/javascript" src="vendor/heatmap.min.js"></script>-->
+<!--	<script type="text/javascript" src="vendor/leaflet-heatmap.js"></script>-->
 
 	<script src="dist/bundle.js?v=4"></script>
 
@@ -45,7 +45,8 @@
 
 		<div id="dash" class="col-sm-5 col-md-3">
 			<h1 class="text-center">Airlite Player
-				<a href="https://github.com/slavicd/airlite-player"><small>alpha</small></a>
+				<a href="https://github.com/slavicd/airlite-player">
+					<img src="/dist/assets/GitHub-Mark-32px.png" style="height: 1.5rem;" /> <small>on Github</small></a>
 			</h1>
 
 			<p class="">
@@ -144,7 +145,7 @@
 				$("#load-status").text("Loading data..");
 				$("#play-btn").prop("disabled", true);
 			},
-			onLoad: function(player, data) {
+			onLoad: function(player, data, rasterized) {
 				var frame = player.biteIn();
 				$("#play-btn").prop("disabled", false);
 				var text = "Loaded " + data.length + " frames. ";
