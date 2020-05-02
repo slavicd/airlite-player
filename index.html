@@ -13,10 +13,8 @@
 		src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
 		integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8="
 		crossorigin="anonymous"></script>
-<!--	<script type="text/javascript" src="vendor/heatmap.min.js"></script>-->
-<!--	<script type="text/javascript" src="vendor/leaflet-heatmap.js"></script>-->
 
-	<script src="dist/bundle.js?v=4"></script>
+	<script src="dist/bundle.js?v=5"></script>
 
 	<style type="text/css">
 		body {
@@ -182,8 +180,7 @@
 			player.setConfig('temporalGrouping', this.value);
 			player.load();
 		});
-		$("#dash form").find("#animation_delay").on("change", function() {
-			player.stop();
+		$("#dash form").find("#animation_delay").on("input", function() {
 			player.setConfig('animationInterval', this.value);
 		});
 	});

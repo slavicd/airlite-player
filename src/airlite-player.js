@@ -22,6 +22,8 @@ class AirlitePlayer {
         if (cfg.to) {
             this.range[1] = cfg.to;
         }
+        let d = new Date();
+        this.cfg.tzOffset = d.getTimezoneOffset();
 
         let tileServer = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
         //let tileServer = 'https://maps.wikimedia.org/osm-intl/${z}/${x}/${y}.png';
@@ -115,7 +117,8 @@ class AirlitePlayer {
                     from: that.range[0],
                     to: that.range[1],
                     group: that.cfg.temporalGrouping,
-                    bounds: that.map.getBounds().toBBoxString()
+                    bounds: that.map.getBounds().toBBoxString(),
+                    timezone_delta: that.cfg.tzOffset,
                 }
             }).then(function(resp){
                 if (resp.data.length>600) {
@@ -225,26 +228,32 @@ class AirlitePlayer {
         var index = 0;
         var that = this;
 
-        this.animationInterv = window.setInterval(function() {
-            that.setHmlData(that.rasterized[index].values);
-            that.showStations(that.data[index].values);
+        that.playFrame(index);
+    }
 
-            if (that.cfg.onAnimation) {
-                that.cfg.onAnimation((index+1)/that.rasterized.length, that.rasterized[index]);
-            }
+    playFrame(index) {
+        this.setHmlData(this.rasterized[index].values);
+        this.showStations(this.data[index].values);
 
-            ++index;
-            if (index>=that.data.length) {
-                that.stop();
-            }
-        }, this.cfg.animationInterval);
+        if (this.cfg.onAnimation) {
+            this.cfg.onAnimation((index+1)/this.rasterized.length, this.rasterized[index]);
+        }
+
+        if (index==this.data.length-1) {
+            this.stop();
+        } else {
+            const that = this;
+            this.animationInterv = window.setTimeout(function() {
+                that.playFrame(index+1);
+            }, this.cfg.animationInterval);
+        }
     }
 
     stop() {
         if (!this.animationInterv) {
             return ;
         }
-        window.clearInterval(this.animationInterv);
+        window.clearTimeout(this.animationInterv);
         this.animationInterv = null;
         this.biteIn();
     }
