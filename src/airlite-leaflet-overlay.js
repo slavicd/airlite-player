@@ -2,15 +2,16 @@ let AirliteOverlay = L.Layer.extend({
     initialize: function(config) {
         this._data = [];
         let defaults = {
-            threshold: 100,
+            threshold: 150,
             gradient: [
                 {'threshold': 0, 'color': '#00BFFF'},
-                {'threshold': 0.20, 'color': '#dcff00'},
-                {'threshold': 0.50, 'color': '#ff0000'},
-                {'threshold': 1, 'color': '#8500FF'},
+                {'threshold': 0.13, 'color': '#dcff00'},
+                {'threshold': 0.26, 'color': '#ff0000'},
+                {'threshold': 0.66, 'color': '#8500FF'},
+                {'threshold': 1, 'color': '#000000'},
             ],
             maxOpacity: 0.8,
-            minOpacity: 0.05,
+            minOpacity: 0.1,
         };
         this._config = Object.assign(defaults, config);
         for (let i=0; i<this._config.gradient.length; i++) {
@@ -103,7 +104,7 @@ let AirliteOverlay = L.Layer.extend({
             ctx.fillStyle = "rgba(" + rgb[0] + ", " + rgb[1] + ", " + rgb[2] + ", " + opacity + ")";
             ctx.fillRect(northEast.x-contPos.x, northEast.y-contPos.y, 2*(center.x-northEast.x), 2*(center.y-northEast.y));
 
-            // ctx.strokeText(Math.round(px.proximity*100)/100,
+            // ctx.fillText(Math.round(px.proximity*100)/100,
             //     northEast.x-contPos.x, northEast.y-contPos.y, 2*(center.x-northEast.x))
         }
 
@@ -135,7 +136,7 @@ let AirliteOverlay = L.Layer.extend({
         }
 
         if (idx===false) {
-            return this._config.gradient[this._config.gradient.length-1];
+            return this._config.gradient[this._config.gradient.length-1].color;
         }
 
         const localDelta = this._config.gradient[idx].threshold - this._config.gradient[idx-1].threshold; // val interval corresponding to two consecutive colors

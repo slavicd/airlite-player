@@ -23,8 +23,8 @@ class Rasterizer {
         this.input = input;
         this.bounds = bounds;
         const defaults = {
-            resolution: 100, // the result raster will contain this many vertical points
-            inferenceRadius: 1000,  // meters
+            resolution: 80, // the result raster will contain this many vertical points
+            inferenceRadius: 1500,  // meters
         };
         this.config = Object.assign({}, defaults, config);
 

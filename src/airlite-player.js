@@ -41,7 +41,7 @@ class AirlitePlayer {
             layers: [baseLayer, this.airliteLayer],
             maxZoom: 17,
             minZoom: 7
-        }).setView(this.cfg.mapCenter, 14);
+        }).setView(this.cfg.mapCenter, 13);
 
         L.control.scale({imperial: false}).addTo(this.map);
 
@@ -59,24 +59,16 @@ class AirlitePlayer {
         this.cfg[key] = val;
     }
 
+    /**
+     * Idea is to increase the inference radius as the distances span larger
+     * @returns {number}
+     */
     getInferenceFromZoom() {
-        if (this.map.getZoom()>=17) {
-            return 200;
-        }
-
-        if (this.map.getZoom()>15) {
-            return 500;
-        }
-
-        if (this.map.getZoom()>12) {
-            return 1000;
-        }
-
-        if (this.map.getZoom()>10) {
-            return 2000;
-        }
-
-        return 4000;
+        const minR = 150;
+        const maxR = 4000;
+        const minZoom = 7;
+        const maxZoom  = 17;
+        return Math.round(100 + (17 - this.map.getZoom())/(maxZoom-minZoom)*(maxR - minR));
     }
 
     /**
@@ -128,6 +120,7 @@ class AirlitePlayer {
 
                 that.data = resp.data;
 
+                //console.log(that.getInferenceFromZoom());
                 let rasterized=[];
                 for (let i=0; i<resp.data.length; i++) {
                     let frame = resp.data[i].values;

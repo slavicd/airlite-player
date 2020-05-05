@@ -14,7 +14,7 @@
 		integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8="
 		crossorigin="anonymous"></script>
 
-	<script src="dist/bundle.js?v=5"></script>
+	<script src="dist/bundle.js?v=9"></script>
 
 	<style type="text/css">
 		body {
@@ -51,23 +51,6 @@
 				Particulate matter visualizer</a>.
 			</p>
 
-			<div>
-				<table class="table table-sm">
-					<tr>
-						<th>0-20 µg/m<sup>3</sup></th>
-						<td style="background-color: deepskyblue;">&nbsp;&nbsp;&nbsp;</td>
-						<th>30-50 µg/m<sup>3</sup></th>
-						<td style="background-color: red;">&nbsp;&nbsp;&nbsp;</td>
-					</tr>
-					<tr>
-						<th>20-30 µg/m<sup>3</sup></th>
-						<td style="background-color: yellow;">&nbsp;&nbsp;&nbsp;</td>
-						<th>50+ µg/m<sup>3</sup></th>
-						<td style="background-color: purple;">&nbsp;&nbsp;&nbsp;</td>
-					</tr>
-				</table>
-			</div>
-
 			<form style="margin-top:2em;">
 				<div class="form-group">
 					<label>From date</label>
@@ -87,6 +70,18 @@
 
 					<strong><output id="air-average"></output></strong>
 				</p>
+
+				<div>
+					<table class="table table-sm">
+						<tr>
+							<td style="background-color: #00BFFF;">0 µg/m<sup>3</sup></td>
+							<td style="background-color: #dcff00;">20 µg/m<sup>3</sup></td>
+							<td style="background-color: #ff0000;">40 µg/m<sup>3</sup></td>
+							<td style="background-color: #8500FF;">100 µg/m<sup>3</sup></td>
+							<td style="background-color: #000000; color: white;">150 µg/m<sup>3</sup></td>
+						</tr>
+					</table>
+				</div>
 
 				<div class="form-group">
 					<label>Temporal grouping (s)</label>
