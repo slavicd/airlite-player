@@ -39,6 +39,6 @@ reporting units.
 
 ## Deliverables
 
-A responsive (optimized for mobile devices) web application that would allow 
-for an easy and comprehensive assessment of air quality based on available 
-data from existing volunteer and state-run stations.
+A responsive web application that would allow for an easy and comprehensive 
+assessment of air quality based on available data from existing volunteer 
+and state-run networks of stations.
