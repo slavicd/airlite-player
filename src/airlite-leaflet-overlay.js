@@ -11,7 +11,7 @@ let AirliteOverlay = L.Layer.extend({
                 {'threshold': 1, 'color': '#000000'},
             ],
             maxOpacity: 0.8,
-            minOpacity: 0.1,
+            minOpacity: 0.05,
         };
         this._config = Object.assign(defaults, config);
         for (let i=0; i<this._config.gradient.length; i++) {
